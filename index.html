@@ -1,0 +1,561 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f3f6f3">
+  <title>聲存｜本機錄音室</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;600;700;800&display=swap');
+
+    :root {
+      color-scheme: light;
+      --paper: #f3f6f3;
+      --surface: #ffffff;
+      --ink: #17231f;
+      --muted: #78827d;
+      --line: #e3e9e4;
+      --forest: #164d3c;
+      --forest-deep: #10392e;
+      --lime: #cdf16c;
+      --coral: #e9785e;
+      --blue: #4386a1;
+      --soft-green: #e9f4ed;
+      --shadow: 0 16px 42px rgba(24, 53, 42, .08);
+      font-family: 'DM Sans', 'Noto Sans TC', sans-serif;
+      font-synthesis: none;
+      text-rendering: optimizeLegibility;
+    }
+
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; background: var(--paper); color: var(--ink); }
+    button, input, select { font: inherit; }
+    button { color: inherit; }
+    .app { display: grid; grid-template-columns: 248px minmax(0, 1fr); min-height: 100vh; }
+
+    .sidebar {
+      position: sticky; top: 0; display: flex; flex-direction: column; height: 100vh;
+      padding: 27px 19px 20px; color: #eef4ed; background: var(--forest-deep);
+    }
+    .brand { display: flex; align-items: center; gap: 12px; padding: 0 8px; }
+    .brand-mark { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 12px; background: var(--lime); color: var(--forest-deep); }
+    .brand-mark svg { width: 21px; height: 21px; }
+    .brand-name { font-size: 19px; font-weight: 800; letter-spacing: 0; }
+    .brand-sub { margin-top: 2px; color: #a7b8ad; font-size: 10px; letter-spacing: 1.2px; text-transform: uppercase; }
+    .nav-label { margin: 43px 10px 12px; color: #92a99b; font-size: 10px; font-weight: 700; letter-spacing: 1.5px; }
+    .nav { display: grid; gap: 5px; }
+    .nav button { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 13px; border: 0; border-radius: 9px; color: #c4d2c8; background: transparent; text-align: left; cursor: pointer; transition: background .18s, color .18s; }
+    .nav button:hover, .nav button.active { color: #fff; background: rgba(255,255,255,.1); }
+    .nav-icon { display: grid; place-items: center; width: 20px; font-size: 16px; }
+    .nav-count { margin-left: auto; color: #aec1b4; font-family: 'DM Mono', monospace; font-size: 11px; }
+    .sidebar-spacer { flex: 1; }
+    .storage { padding: 15px; border: 1px solid rgba(255,255,255,.14); border-radius: 10px; background: rgba(255,255,255,.045); }
+    .storage-head { display: flex; justify-content: space-between; gap: 8px; color: #d7e3da; font-size: 11px; }
+    .storage-head span:last-child { color: #9eb4a5; }
+    .storage-track { height: 5px; margin: 13px 0 8px; overflow: hidden; border-radius: 5px; background: rgba(255,255,255,.13); }
+    .storage-track span { display: block; width: 18%; height: 100%; border-radius: inherit; background: var(--lime); }
+    .storage-note { color: #91a99a; font-size: 10px; }
+    .local-badge { display: flex; align-items: center; gap: 8px; padding: 18px 9px 0; color: #b6c8bb; font-size: 11px; }
+    .local-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--lime); box-shadow: 0 0 0 3px rgba(205,241,108,.13); }
+
+    main { min-width: 0; padding: 30px clamp(22px, 5vw, 72px) 50px; }
+    .topbar { display: flex; align-items: center; justify-content: space-between; max-width: 1180px; margin: 0 auto 37px; }
+    .eyebrow { color: var(--forest); font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; }
+    .top-date { margin-top: 5px; color: var(--muted); font-size: 12px; }
+    .profile { display: flex; align-items: center; gap: 10px; color: #53615a; font-size: 12px; }
+    .profile-mark { display: grid; place-items: center; width: 34px; height: 34px; border: 1px solid var(--line); border-radius: 50%; color: var(--forest); background: white; font-weight: 700; }
+    .content { max-width: 1180px; margin: auto; }
+    .heading-row { display: flex; align-items: end; justify-content: space-between; gap: 20px; margin-bottom: 22px; }
+    h1 { margin: 0; font-size: clamp(26px, 3vw, 34px); font-weight: 700; letter-spacing: 0; }
+    .heading-note { margin: 7px 0 0; color: var(--muted); font-size: 13px; }
+    .today-chip { flex: 0 0 auto; padding: 8px 11px; border: 1px solid #dfe7df; border-radius: 7px; color: #647168; background: rgba(255,255,255,.66); font-family: 'DM Mono', monospace; font-size: 11px; }
+
+    .studio { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(250px, .85fr); gap: 15px; margin-bottom: 37px; }
+    .record-card { position: relative; display: flex; min-height: 254px; flex-direction: column; justify-content: space-between; overflow: hidden; padding: 25px 27px; border-radius: 12px; color: #f3f7f1; background: var(--forest); box-shadow: var(--shadow); }
+    .record-card::after { position: absolute; right: -40px; bottom: -96px; width: 290px; height: 220px; border: 1px solid rgba(255,255,255,.09); border-radius: 50%; content: ''; box-shadow: 0 0 0 23px rgba(255,255,255,.025), 0 0 0 47px rgba(255,255,255,.02); pointer-events: none; }
+    .record-top { position: relative; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .record-label { color: #c9d9cf; font-size: 12px; }
+    .live-state { display: flex; align-items: center; gap: 7px; color: #dbe8df; font-size: 10px; }
+    .live-state i { width: 7px; height: 7px; border-radius: 50%; background: #b4e975; }
+    .record-center { position: relative; z-index: 1; display: flex; align-items: center; gap: 20px; }
+    .record-button { display: grid; flex: 0 0 auto; place-items: center; width: 69px; height: 69px; border: 7px solid rgba(255,255,255,.2); border-radius: 50%; background: var(--lime); cursor: pointer; transition: transform .18s, background .18s; }
+    .record-button:hover { transform: scale(1.04); }
+    .record-button:disabled { opacity: .7; cursor: wait; }
+    .record-button .record-symbol { width: 19px; height: 19px; border-radius: 50%; background: var(--forest-deep); }
+    .record-button.recording { border-color: rgba(233,120,94,.22); background: #fff; }
+    .record-button.recording .record-symbol { width: 18px; height: 18px; border-radius: 4px; background: var(--coral); }
+    .record-copy strong { display: block; font-size: 17px; font-weight: 600; }
+    .record-copy span { display: block; margin-top: 6px; color: #bdd0c2; font-size: 11px; }
+    .record-bottom { position: relative; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 19px; border-top: 1px solid rgba(255,255,255,.16); }
+    .source-select { max-width: 170px; padding: 8px 28px 8px 10px; border: 1px solid rgba(255,255,255,.23); border-radius: 6px; color: #f4f7f3; background: rgba(255,255,255,.08); font-size: 11px; }
+    .source-select option { color: var(--ink); }
+    .secure-note { color: #bfd0c3; font-size: 10px; text-align: right; }
+
+    .limits-card { display: flex; flex-direction: column; justify-content: space-between; padding: 22px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+    .limits-top { display: flex; align-items: center; gap: 10px; }
+    .limits-icon { display: grid; place-items: center; width: 33px; height: 33px; border-radius: 9px; color: var(--forest); background: var(--soft-green); font-size: 16px; }
+    .limits-title { font-size: 13px; font-weight: 700; }
+    .limits-copy { margin: 13px 0 14px; color: #66736b; font-size: 11px; line-height: 1.8; }
+    .platform-tags { display: flex; flex-wrap: wrap; gap: 7px; }
+    .platform-tags span { padding: 6px 8px; border: 1px solid var(--line); border-radius: 5px; color: #65726a; background: #fafcf9; font-size: 10px; }
+    .limits-link { align-self: flex-start; margin-top: 16px; padding: 0; border: 0; color: var(--forest); background: none; font-size: 11px; font-weight: 700; cursor: pointer; }
+
+    .list-head { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 13px; }
+    .list-title { display: flex; align-items: baseline; gap: 9px; }
+    h2 { margin: 0; font-size: 16px; font-weight: 700; }
+    .list-count { color: #89938d; font-family: 'DM Mono', monospace; font-size: 11px; }
+    .list-tools { display: flex; align-items: center; gap: 9px; }
+    .search { width: 178px; padding: 9px 11px 9px 30px; border: 1px solid var(--line); border-radius: 7px; outline: 0; color: var(--ink); background: #fff; font-size: 11px; }
+    .search:focus { border-color: #9fbaa8; box-shadow: 0 0 0 3px rgba(22,77,60,.08); }
+    .search-wrap { position: relative; }
+    .search-wrap::before { position: absolute; top: 8px; left: 10px; color: #849087; content: '⌕'; font-size: 16px; }
+    .filter-row { display: flex; gap: 5px; margin-bottom: 10px; }
+    .filter { padding: 7px 10px; border: 1px solid transparent; border-radius: 6px; color: #78827c; background: transparent; font-size: 10px; cursor: pointer; }
+    .filter:hover { color: var(--forest); }
+    .filter.active { border-color: #dce8df; color: var(--forest); background: #eaf3ec; font-weight: 700; }
+    .record-list { overflow: hidden; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+    .list-columns, .record-row { display: grid; grid-template-columns: minmax(180px, 1.7fr) minmax(95px, .7fr) minmax(92px, .7fr) 96px 34px; align-items: center; gap: 12px; }
+    .list-columns { padding: 11px 17px; border-bottom: 1px solid var(--line); color: #8a948e; background: #fbfcfb; font-size: 9px; font-weight: 700; letter-spacing: .8px; }
+    .record-row { min-height: 69px; padding: 10px 17px; border-bottom: 1px solid #edf0ed; transition: background .15s; }
+    .record-row:last-child { border-bottom: 0; }
+    .record-row:hover { background: #fbfdfb; }
+    .file-main { display: flex; min-width: 0; align-items: center; gap: 11px; }
+    .file-icon { display: grid; flex: 0 0 auto; place-items: center; width: 35px; height: 35px; border-radius: 8px; color: var(--forest); background: #ebf4ed; font-size: 14px; }
+    .file-icon.line { color: #368666; background: #e8f4ec; }
+    .file-icon.phone { color: #467b92; background: #e9f2f5; }
+    .file-title { overflow: hidden; color: #2d3932; font-size: 11px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+    .file-meta { margin-top: 4px; color: #929b95; font-family: 'DM Mono', monospace; font-size: 9px; }
+    .type-tag { justify-self: start; padding: 5px 7px; border-radius: 4px; color: #587665; background: #eef5ef; font-size: 9px; }
+    .type-tag.phone { color: #487589; background: #edf4f6; }
+    .type-tag.other { color: #7d7860; background: #f3f2e9; }
+    .row-date { color: #77827a; font-size: 10px; }
+    .duration { color: #5f6c63; font-family: 'DM Mono', monospace; font-size: 10px; }
+    .row-actions { display: flex; justify-content: flex-end; gap: 3px; }
+    .icon-button { display: grid; place-items: center; width: 29px; height: 29px; border: 0; border-radius: 6px; color: #637168; background: transparent; cursor: pointer; }
+    .icon-button:hover { color: var(--forest); background: #edf4ee; }
+    .icon-button.delete:hover { color: #bd4d3e; background: #fbefec; }
+    .empty-state { padding: 37px 20px; color: #79857d; text-align: center; font-size: 12px; }
+    .empty-state strong { display: block; margin-bottom: 6px; color: #334139; font-size: 13px; }
+    .demo-note { display: flex; align-items: center; gap: 7px; margin-top: 13px; color: #8b958e; font-size: 10px; }
+    .demo-note span { color: #c47b3d; }
+
+    .toast { position: fixed; right: 24px; bottom: 24px; z-index: 10; max-width: min(390px, calc(100vw - 32px)); padding: 13px 16px; transform: translateY(14px); border: 1px solid #dce7dc; border-radius: 8px; opacity: 0; color: #263b30; background: #fff; box-shadow: var(--shadow); font-size: 12px; pointer-events: none; transition: opacity .2s, transform .2s; }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .modal-backdrop { position: fixed; inset: 0; z-index: 20; display: none; place-items: center; padding: 20px; background: rgba(18,34,27,.44); }
+    .modal-backdrop.show { display: grid; }
+    .modal { width: min(440px, 100%); padding: 23px; border: 1px solid var(--line); border-radius: 12px; background: #fff; box-shadow: 0 25px 70px rgba(12,33,24,.2); }
+    .modal h3 { margin: 0 0 11px; font-size: 17px; }
+    .modal p { margin: 0; color: #647168; font-size: 12px; line-height: 1.8; }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; }
+    .modal-actions button { padding: 9px 13px; border: 1px solid var(--line); border-radius: 6px; background: #fff; font-size: 11px; cursor: pointer; }
+    .modal-actions .confirm { border-color: var(--forest); color: #fff; background: var(--forest); }
+    .mobile-nav { display: none; }
+
+    @media (max-width: 950px) {
+      .app { grid-template-columns: 210px minmax(0,1fr); }
+      main { padding-right: 28px; padding-left: 28px; }
+      .studio { grid-template-columns: minmax(0,1.3fr) minmax(220px,.9fr); }
+      .record-card { padding: 22px; }
+      .list-columns, .record-row { grid-template-columns: minmax(155px,1.5fr) 75px 78px 67px 30px; gap: 8px; }
+      .search { width: 145px; }
+    }
+    @media (max-width: 720px) {
+      .app { display: block; min-height: 100vh; padding-bottom: 70px; }
+      .sidebar { display: none; }
+      main { padding: 21px 17px 30px; }
+      .topbar { margin-bottom: 27px; }
+      .top-date { font-size: 11px; }
+      .profile > span:first-child { display: none; }
+      .heading-row { align-items: flex-start; margin-bottom: 17px; }
+      h1 { font-size: 27px; }
+      .heading-note { max-width: 245px; font-size: 11px; line-height: 1.65; }
+      .today-chip { padding: 7px 8px; font-size: 9px; }
+      .studio { grid-template-columns: 1fr; gap: 10px; margin-bottom: 28px; }
+      .record-card { min-height: 228px; padding: 20px; }
+      .record-center { gap: 15px; }
+      .record-button { width: 62px; height: 62px; }
+      .record-copy strong { font-size: 15px; }
+      .limits-card { padding: 16px; }
+      .limits-copy { margin: 10px 0; }
+      .limits-link { margin-top: 11px; }
+      .list-head { align-items: flex-start; flex-direction: column; }
+      .list-tools { width: 100%; }
+      .search-wrap { flex: 1; }
+      .search { width: 100%; }
+      .filter-row { overflow-x: auto; padding-bottom: 2px; }
+      .filter { flex: 0 0 auto; }
+      .list-columns { display: none; }
+      .record-list { border-radius: 9px; }
+      .record-row { grid-template-columns: minmax(0,1fr) auto; gap: 3px 8px; min-height: 72px; padding: 11px 12px; }
+      .file-main { grid-column: 1; grid-row: 1 / span 2; }
+      .type-tag { grid-column: 2; grid-row: 1; justify-self: end; }
+      .row-date { display: none; }
+      .duration { grid-column: 2; grid-row: 2; justify-self: end; }
+      .row-actions { display: none; }
+      .demo-note { align-items: flex-start; line-height: 1.6; }
+      .mobile-nav { position: fixed; right: 0; bottom: 0; left: 0; z-index: 5; display: grid; grid-template-columns: repeat(3, 1fr); padding: 8px 8px max(8px, env(safe-area-inset-bottom)); border-top: 1px solid var(--line); background: rgba(255,255,255,.96); backdrop-filter: blur(14px); }
+      .mobile-nav button { display: grid; justify-items: center; gap: 3px; padding: 4px; border: 0; color: #869089; background: transparent; font-size: 9px; cursor: pointer; }
+      .mobile-nav button.active { color: var(--forest); font-weight: 700; }
+      .mobile-nav b { font-size: 17px; font-weight: 500; }
+      .toast { right: 12px; bottom: 82px; }
+    }
+    @media (max-width: 380px) {
+      main { padding-right: 13px; padding-left: 13px; }
+      .today-chip { display: none; }
+      .record-bottom { align-items: flex-start; flex-direction: column; }
+      .secure-note { text-align: left; }
+    }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; } }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar" aria-label="主要導覽">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M4 10v4m4-8v12m4-16v20m4-14v8m4-12v16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></div>
+        <div><div class="brand-name">聲存</div><div class="brand-sub">Local voice archive</div></div>
+      </div>
+      <div class="nav-label">工作區</div>
+      <nav class="nav">
+        <button class="active" data-nav="home"><span class="nav-icon">◫</span>錄音室</button>
+        <button data-nav="records"><span class="nav-icon">▤</span>所有錄音<span class="nav-count" id="nav-count">03</span></button>
+        <button data-nav="privacy"><span class="nav-icon">◈</span>隱私與儲存</button>
+      </nav>
+      <div class="sidebar-spacer"></div>
+      <div class="storage">
+        <div class="storage-head"><span>本機空間</span><span id="storage-text">計算中</span></div>
+        <div class="storage-track"><span id="storage-bar"></span></div>
+        <div class="storage-note">錄音只存在這台裝置</div>
+      </div>
+      <div class="local-badge"><i class="local-dot"></i>本機模式 · 未連接雲端</div>
+    </aside>
+
+    <main>
+      <header class="topbar">
+        <div><div class="eyebrow">Personal voice archive</div><div class="top-date" id="today-date"></div></div>
+        <div class="profile"><span>私人錄音空間</span><span class="profile-mark">聲</span></div>
+      </header>
+
+      <div class="content">
+        <section class="heading-row">
+          <div><h1>早安，今天想記下什麼？</h1><p class="heading-note">錄音、整理，讓重要的對話有跡可循。</p></div>
+          <div class="today-chip" id="today-count">TODAY · 00</div>
+        </section>
+
+        <section class="studio" aria-label="錄音控制與平台說明">
+          <div class="record-card">
+            <div class="record-top"><span class="record-label">快速錄音</span><span class="live-state" id="live-state"><i></i><span>準備就緒</span></span></div>
+            <div class="record-center">
+              <button class="record-button" id="record-button" aria-label="開始錄音"><span class="record-symbol"></span></button>
+              <div class="record-copy"><strong id="record-title">開始一段新錄音</strong><span id="record-subtitle">點一下開始，結束後自動存入本機</span></div>
+            </div>
+            <div class="record-bottom">
+              <select class="source-select" id="source-select" aria-label="錄音分類">
+                <option value="其他">分類：一般錄音</option>
+                <option value="電話">分類：電話相關</option>
+                <option value="LINE">分類：LINE 相關</option>
+              </select>
+              <span class="secure-note">● 僅使用麥克風 · 本機保存</span>
+            </div>
+          </div>
+
+          <aside class="limits-card">
+            <div>
+              <div class="limits-top"><span class="limits-icon">i</span><span class="limits-title">通話錄音，先了解裝置限制</span></div>
+              <p class="limits-copy">此雛形只錄取麥克風聲音，無法直接擷取電話或 LINE 的雙方通話音訊。通話期間也可能被系統中止。</p>
+              <div class="platform-tags"><span>iPhone：系統限制</span><span>Android：依裝置而異</span></div>
+            </div>
+            <button class="limits-link" id="limits-link">查看錄音與隱私說明　→</button>
+          </aside>
+        </section>
+
+        <section aria-label="錄音清單">
+          <div class="list-head">
+            <div class="list-title"><h2>最近錄音</h2><span class="list-count" id="list-count">03 項</span></div>
+            <div class="list-tools"><label class="search-wrap"><input class="search" id="search" type="search" placeholder="搜尋錄音名稱" aria-label="搜尋錄音名稱"></label></div>
+          </div>
+          <div class="filter-row" role="group" aria-label="錄音分類篩選">
+            <button class="filter active" data-filter="全部">全部</button>
+            <button class="filter" data-filter="電話">電話相關</button>
+            <button class="filter" data-filter="LINE">LINE 相關</button>
+            <button class="filter" data-filter="其他">一般錄音</button>
+          </div>
+          <div class="record-list">
+            <div class="list-columns"><span>錄音名稱</span><span>分類</span><span>日期</span><span>長度</span><span></span></div>
+            <div id="record-list-body"></div>
+          </div>
+          <div class="demo-note"><span>●</span>清單中的範例項目僅供介面展示；新錄音會保存在此瀏覽器的本機資料中。</div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <nav class="mobile-nav" aria-label="手機導覽">
+    <button class="active" data-nav="home"><b>◫</b>錄音室</button>
+    <button data-nav="records"><b>▤</b>所有錄音</button>
+    <button data-nav="privacy"><b>◈</b>隱私設定</button>
+  </nav>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <div class="modal-backdrop" id="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal"><h3 id="modal-title">錄音與隱私</h3><p id="modal-copy"></p><div class="modal-actions"><button id="modal-close">知道了</button></div></div>
+  </div>
+
+  <script>
+    const DB_NAME = 'sound-archive-local';
+    const DB_VERSION = 1;
+    const STORE_NAME = 'recordings';
+    const exampleRecords = [
+      { id: 'sample-1', title: '週四討論重點', category: '其他', date: '今天 10:42', duration: '08:16', sample: true },
+      { id: 'sample-2', title: '客戶需求備忘', category: '電話', date: '昨天 16:08', duration: '03:52', sample: true },
+      { id: 'sample-3', title: '語音訊息整理', category: 'LINE', date: '11 月 24 日', duration: '01:28', sample: true }
+    ];
+    let database;
+    let records = [...exampleRecords];
+    let activeFilter = '全部';
+    let mediaRecorder;
+    let mediaStream;
+    let recordingChunks = [];
+    let recordingStartedAt = 0;
+    let timerId;
+    let toastTimer;
+    const objectUrls = new Map();
+
+    const elements = {
+      list: document.querySelector('#record-list-body'),
+      search: document.querySelector('#search'),
+      button: document.querySelector('#record-button'),
+      title: document.querySelector('#record-title'),
+      subtitle: document.querySelector('#record-subtitle'),
+      live: document.querySelector('#live-state'),
+      source: document.querySelector('#source-select'),
+      toast: document.querySelector('#toast'),
+      modal: document.querySelector('#modal-backdrop'),
+      modalTitle: document.querySelector('#modal-title'),
+      modalCopy: document.querySelector('#modal-copy')
+    };
+
+    function openDatabase() {
+      return new Promise((resolve, reject) => {
+        const request = indexedDB.open(DB_NAME, DB_VERSION);
+        request.onupgradeneeded = () => request.result.createObjectStore(STORE_NAME, { keyPath: 'id' });
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+    }
+
+    function transaction(mode = 'readonly') {
+      return database.transaction(STORE_NAME, mode).objectStore(STORE_NAME);
+    }
+
+    function loadRecordings() {
+      return new Promise((resolve, reject) => {
+        const request = transaction().getAll();
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+    }
+
+    function saveRecording(recording) {
+      return new Promise((resolve, reject) => {
+        const request = transaction('readwrite').put(recording);
+        request.onsuccess = resolve;
+        request.onerror = () => reject(request.error);
+      });
+    }
+
+    function deleteRecording(id) {
+      return new Promise((resolve, reject) => {
+        const request = transaction('readwrite').delete(id);
+        request.onsuccess = resolve;
+        request.onerror = () => reject(request.error);
+      });
+    }
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]);
+    }
+
+    function formatDuration(seconds) {
+      const minutes = Math.floor(seconds / 60).toString().padStart(2, '0');
+      const remainder = Math.floor(seconds % 60).toString().padStart(2, '0');
+      return `${minutes}:${remainder}`;
+    }
+
+    function render() {
+      const query = elements.search.value.trim().toLocaleLowerCase();
+      const filtered = records.filter(record => (activeFilter === '全部' || record.category === activeFilter) && record.title.toLocaleLowerCase().includes(query));
+      document.querySelector('#list-count').textContent = `${filtered.length.toString().padStart(2, '0')} 項`;
+      document.querySelector('#nav-count').textContent = records.length.toString().padStart(2, '0');
+      document.querySelector('#today-count').textContent = `TODAY · ${records.filter(record => record.createdAt && new Date(record.createdAt).toDateString() === new Date().toDateString()).length.toString().padStart(2, '0')}`;
+      document.querySelector('#storage-text').textContent = `${Math.max(1, Math.round(records.reduce((sum, record) => sum + (record.blob?.size || 0), 0) / 1024 / 1024))} MB 使用`;
+      document.querySelector('#storage-bar').style.width = `${Math.min(90, 8 + records.reduce((sum, record) => sum + (record.blob?.size || 0), 0) / 150000)}%`;
+
+      if (!filtered.length) {
+        elements.list.innerHTML = '<div class="empty-state"><strong>沒有符合的錄音</strong>換個關鍵字或分類再找找。</div>';
+        return;
+      }
+
+      elements.list.innerHTML = filtered.map(record => {
+        const categoryClass = record.category === 'LINE' ? 'line' : record.category === '電話' ? 'phone' : '';
+        const icon = record.category === 'LINE' ? '◌' : record.category === '電話' ? '⌕' : '≋';
+        const date = record.createdAt ? new Date(record.createdAt).toLocaleString('zh-TW', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }) : record.date;
+        return `<article class="record-row" data-id="${escapeHtml(record.id)}">
+          <div class="file-main"><span class="file-icon ${categoryClass}">${icon}</span><div style="min-width:0"><div class="file-title">${escapeHtml(record.title)}</div><div class="file-meta">${record.sample ? '介面範例' : '本機錄音'}</div></div></div>
+          <span class="type-tag ${record.category === '電話' ? 'phone' : record.category === '其他' ? 'other' : ''}">${escapeHtml(record.category)}</span>
+          <span class="row-date">${escapeHtml(date)}</span><span class="duration">${escapeHtml(record.duration || '00:00')}</span>
+          <div class="row-actions"><button class="icon-button play" aria-label="播放錄音" title="播放">▶</button><button class="icon-button delete" aria-label="刪除錄音" title="刪除">×</button></div>
+        </article>`;
+      }).join('');
+    }
+
+    function showToast(message) {
+      elements.toast.textContent = message;
+      elements.toast.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => elements.toast.classList.remove('show'), 3000);
+    }
+
+    function showModal(title, copy) {
+      elements.modalTitle.textContent = title;
+      elements.modalCopy.textContent = copy;
+      elements.modal.classList.add('show');
+    }
+
+    function setRecordingState(recording) {
+      elements.button.classList.toggle('recording', recording);
+      elements.button.setAttribute('aria-label', recording ? '結束錄音' : '開始錄音');
+      elements.title.textContent = recording ? '正在錄音' : '開始一段新錄音';
+      elements.subtitle.textContent = recording ? '點一下結束，音檔會存入本機' : '點一下開始，結束後自動存入本機';
+      elements.live.querySelector('span').textContent = recording ? '錄音中' : '準備就緒';
+      elements.live.querySelector('i').style.background = recording ? '#ef8c72' : '#b4e975';
+      elements.source.disabled = recording;
+    }
+
+    async function startRecording() {
+      if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) {
+        showToast('這個瀏覽器不支援麥克風錄音，請改用最新版瀏覽器。');
+        return;
+      }
+      elements.button.disabled = true;
+      try {
+        mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const options = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? { mimeType: 'audio/webm;codecs=opus' } : undefined;
+        mediaRecorder = new MediaRecorder(mediaStream, options);
+        recordingChunks = [];
+        recordingStartedAt = Date.now();
+        mediaRecorder.ondataavailable = event => { if (event.data.size) recordingChunks.push(event.data); };
+        mediaRecorder.onstop = storeCurrentRecording;
+        mediaRecorder.start(250);
+        setRecordingState(true);
+        timerId = setInterval(() => {
+          const elapsed = formatDuration((Date.now() - recordingStartedAt) / 1000);
+          elements.subtitle.textContent = `${elapsed} · 點一下結束錄音`;
+        }, 500);
+      } catch (error) {
+        const message = error.name === 'NotAllowedError' ? '未取得麥克風權限。請在瀏覽器設定允許麥克風後再試。' : '無法啟動麥克風，可能正被其他 App 使用。';
+        showToast(message);
+      } finally {
+        elements.button.disabled = false;
+      }
+    }
+
+    function stopRecording() {
+      if (!mediaRecorder || mediaRecorder.state === 'inactive') return;
+      clearInterval(timerId);
+      mediaRecorder.stop();
+      mediaStream?.getTracks().forEach(track => track.stop());
+      setRecordingState(false);
+      elements.subtitle.textContent = '正在保存到本機…';
+    }
+
+    async function storeCurrentRecording() {
+      const blob = new Blob(recordingChunks, { type: mediaRecorder.mimeType || 'audio/webm' });
+      const elapsedSeconds = Math.max(1, (Date.now() - recordingStartedAt) / 1000);
+      const category = elements.source.value;
+      const stamp = new Date();
+      const title = `${category === '其他' ? '錄音' : `${category}相關錄音`} ${stamp.toLocaleDateString('zh-TW', { month: 'numeric', day: 'numeric' })} ${stamp.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', hour12: false })}`;
+      const recording = { id: crypto.randomUUID(), title, category, createdAt: stamp.toISOString(), duration: formatDuration(elapsedSeconds), mimeType: blob.type, blob };
+      try {
+        await saveRecording(recording);
+        records = [recording, ...records];
+        activeFilter = '全部';
+        document.querySelectorAll('.filter').forEach(button => button.classList.toggle('active', button.dataset.filter === '全部'));
+        render();
+        showToast('錄音已保存在這台裝置。');
+      } catch {
+        showToast('本機儲存失敗，請檢查瀏覽器儲存空間。');
+      } finally {
+        elements.subtitle.textContent = '點一下開始，結束後自動存入本機';
+        recordingChunks = [];
+      }
+    }
+
+    async function playRecording(id) {
+      const record = records.find(item => item.id === id);
+      if (!record) return;
+      if (!record.blob) {
+        showToast('這是介面範例，沒有實際音檔。');
+        return;
+      }
+      const previousUrl = objectUrls.get(id);
+      if (previousUrl) URL.revokeObjectURL(previousUrl);
+      const url = URL.createObjectURL(record.blob);
+      objectUrls.set(id, url);
+      const player = new Audio(url);
+      try { await player.play(); } catch { showToast('無法播放這段錄音。'); }
+    }
+
+    async function removeRecording(id) {
+      const record = records.find(item => item.id === id);
+      if (!record) return;
+      if (record.sample) {
+        showToast('介面範例不能刪除。');
+        return;
+      }
+      if (!confirm(`確定刪除「${record.title}」？此動作無法復原。`)) return;
+      await deleteRecording(id);
+      const url = objectUrls.get(id);
+      if (url) URL.revokeObjectURL(url);
+      records = records.filter(item => item.id !== id);
+      render();
+      showToast('錄音已從本機刪除。');
+    }
+
+    elements.button.addEventListener('click', () => mediaRecorder?.state === 'recording' ? stopRecording() : startRecording());
+    elements.search.addEventListener('input', render);
+    document.querySelectorAll('.filter').forEach(button => button.addEventListener('click', () => {
+      activeFilter = button.dataset.filter;
+      document.querySelectorAll('.filter').forEach(item => item.classList.toggle('active', item === button));
+      render();
+    }));
+    elements.list.addEventListener('click', event => {
+      const row = event.target.closest('.record-row');
+      if (!row) return;
+      if (event.target.closest('.play')) playRecording(row.dataset.id);
+      if (event.target.closest('.delete')) removeRecording(row.dataset.id);
+    });
+
+    const privacyCopy = '聲存雛形只請求麥克風權限，錄音檔保存在目前瀏覽器的本機資料庫，不會上傳。它無法直接擷取 iPhone 或 Android 電話、LINE 的雙方通話音訊；通話中是否能錄到麥克風也由系統決定。請在錄音前告知對方並遵守所在地規範。清除瀏覽器網站資料也會一併刪除錄音。';
+    document.querySelector('#limits-link').addEventListener('click', () => showModal('錄音與隱私', privacyCopy));
+    document.querySelectorAll('[data-nav="privacy"]').forEach(button => button.addEventListener('click', () => showModal('隱私與本機儲存', privacyCopy)));
+    document.querySelectorAll('[data-nav="records"]').forEach(button => button.addEventListener('click', () => {
+      document.querySelector('#search').focus();
+      document.querySelector('.record-list').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }));
+    document.querySelectorAll('[data-nav="home"]').forEach(button => button.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' })));
+    document.querySelector('#modal-close').addEventListener('click', () => elements.modal.classList.remove('show'));
+    elements.modal.addEventListener('click', event => { if (event.target === elements.modal) elements.modal.classList.remove('show'); });
+    document.addEventListener('keydown', event => { if (event.key === 'Escape') elements.modal.classList.remove('show'); });
+
+    document.querySelector('#today-date').textContent = new Date().toLocaleDateString('zh-TW', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' });
+    openDatabase().then(async db => {
+      database = db;
+      records = [...await loadRecordings(), ...exampleRecords];
+      render();
+    }).catch(() => {
+      showToast('無法開啟本機資料庫；錄音保存功能目前不可用。');
+      render();
+    });
+  </script>
+</body>
+</html>
